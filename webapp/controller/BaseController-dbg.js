@@ -1,103 +1,144 @@
-sap.ui.define(
-  ["sap/ui/core/mvc/Controller", "sap/ui/core/routing/History", "sap/m/MessageBox"],
-  function (Controller, History, MessageBox) {
+sap.ui.define([
+    "sap/ui/core/mvc/Controller",
+    "sap/ui/core/routing/History",
+    "sap/m/MessageBox"
+], function (Controller, History, MessageBox) {
     "use strict";
 
     return Controller.extend("com.wel.assetstandardcost.controller.BaseController", {
-      getModel: function (sName) {
-        return this.getView().getModel(sName);
-      },
+        /**
+         * Convenience method for accessing the view model by name.
+         * @public
+         * @param {string} [sName] the model name
+         * @returns {sap.ui.model.Model} the model instance
+         */
+        getModel: function (sName) {
+            return this.getView().getModel(sName);
+        },
 
-      setModel: function (oModel, sName) {
-        return this.getView().setModel(oModel, sName);
-      },
+        /**
+         * Convenience method for setting the view model.
+         * @public
+         * @param {sap.ui.model.Model} oModel the model instance
+         * @param {string} [sName] the model name
+         * @returns {sap.ui.core.mvc.View} the current view instance
+         */
+        setModel: function (oModel, sName) {
+            return this.getView().setModel(oModel, sName);
+        },
 
-      getResourceBundle: function () {
-        return this.getOwnerComponent().getModel("i18n").getResourceBundle();
-      },
+        /**
+         * Getter for the resource bundle.
+         * @public
+         * @returns {sap.ui.model.resource.ResourceModel} the resourceModel of the component
+         */
+        getResourceBundle: function () {
+            return this.getOwnerComponent().getModel("i18n").getResourceBundle();
+        },
 
-      getDataFromServer: function (sPath, urlParam, filters) {
-        return new Promise((resolve, reject) => {
-          let oDataModel = this.getOwnerComponent().getModel();
+        /**
+         * Reads data from the backend OData service.
+         * @public
+         * @param {string} sPath the entity set or path
+         * @param {object} [urlParam] URL parameters
+         * @param {sap.ui.model.Filter[]} [filters] array of filters
+         * @returns {Promise<object>} promise resolving with the read result
+         */
+        getDataFromServer: function (sPath, urlParam, filters) {
+            return new Promise((resolve, reject) => {
+                const oDataModel = this.getOwnerComponent().getModel();
 
-          let onSuccess = (oData) => resolve(oData);
-          let onError = (err) => reject(err);
+                oDataModel.read(sPath, {
+                    filters: filters,
+                    urlParameters: urlParam,
+                    success: (oData) => resolve(oData),
+                    error: (err) => reject(err),
+                    async: true
+                });
+            });
+        },
 
-          oDataModel.read(sPath, {
-            filters: filters,
-            urlParameters: urlParam,
-            success: onSuccess,
-            error: onError,
-            async: true,
-          });
-        });
-      },
+        /**
+         * Creates an entity on the backend OData service.
+         * @public
+         * @param {string} sPath the entity set path
+         * @param {object} [oEntity={}] the entity payload
+         * @returns {Promise<object>} promise resolving with the created entity
+         */
+        postDataToServer: function (sPath, oEntity = {}) {
+            return new Promise((resolve, reject) => {
+                const oDataModel = this.getOwnerComponent().getModel();
 
-      postDataToServer: function (sPath, oEntity = {}) {
-        return new Promise((resolve, reject) => {
-          let oDataModel = this.getOwnerComponent().getModel();
+                oDataModel.create(sPath, oEntity, {
+                    success: (oData) => resolve(oData),
+                    error: (err) => reject(err),
+                    async: true
+                });
+            });
+        },
 
-          let onSuccess = (oData) => resolve(oData);
-          let onError = (err) => reject(err);
+        /**
+         * Updates an entity on the backend OData service.
+         * @public
+         * @param {string} sPath the entity path
+         * @param {object} oEntity the entity payload to update
+         * @returns {Promise<object>} promise resolving with the update result
+         */
+        updateDataToServer: function (sPath, oEntity) {
+            return new Promise((resolve, reject) => {
+                const oDataModel = this.getOwnerComponent().getModel();
 
-          oDataModel.create(sPath, oEntity, {
-            success: onSuccess,
-            error: onError,
-            async: true,
-          });
-        });
-      },
+                oDataModel.update(sPath, oEntity, {
+                    method: "PUT",
+                    success: (oData) => resolve(oData),
+                    error: (err) => reject(err),
+                    async: true
+                });
+            });
+        },
 
-      updateDataToServer: function (sPath, oEntity) {
-        return new Promise((resolve, reject) => {
-          let oDataModel = this.getOwnerComponent().getModel();
+        /**
+         * Deletes an entity on the backend OData service.
+         * @public
+         * @param {string} sPath the entity path to delete
+         * @returns {Promise<object>} promise resolving on successful delete
+         */
+        deleteDataRequestToServer: function (sPath) {
+            return new Promise((resolve, reject) => {
+                const oDataModel = this.getOwnerComponent().getModel();
 
-          let onSuccess = (oData) => resolve(oData);
-          let onError = (err) => reject(err);
+                oDataModel.remove(sPath, {
+                    method: "DELETE",
+                    success: (oData) => resolve(oData),
+                    error: (err) => reject(err),
+                    async: true
+                });
+            });
+        },
 
-          oDataModel.update(sPath, oEntity, {
-            method: "PUT",
-            success: onSuccess,
-            error: onError,
-            async: true,
-          });
-        });
-      },
-
-      deleteDataRequestToServer: function (sPath) {
-        return new Promise((resolve, reject) => {
-          let oDataModel = this.getOwnerComponent().getModel();
-
-          let onSuccess = (oData) => resolve(oData);
-          let onError = (err) => reject(err);
-
-          oDataModel.remove(sPath, {
-            method: "DELETE",
-            success: onSuccess,
-            error: onError,
-            async: true,
-          });
-        });
-      },
-
-      displayMessage: function (sType, sMsg) {
-        switch (sType) {
-          case "Error":
-            MessageBox.error(sMsg);
-            break;
-          case "Warning":
-            MessageBox.warning(sMsg);
-            break;
-          case "Alert":
-            MessageBox.alert(sMsg);
-            break;
-          case "Success":
-            MessageBox.success(sMsg);
-            break;
-          default:
-            break;
+        /**
+         * Displays a popup message dialog based on the provided type.
+         * @public
+         * @param {"Error"|"Warning"|"Alert"|"Success"} sType the type of message
+         * @param {string} sMsg the message to display
+         */
+        displayMessage: function (sType, sMsg) {
+            switch (sType) {
+                case "Error":
+                    MessageBox.error(sMsg);
+                    break;
+                case "Warning":
+                    MessageBox.warning(sMsg);
+                    break;
+                case "Alert":
+                    MessageBox.alert(sMsg);
+                    break;
+                case "Success":
+                    MessageBox.success(sMsg);
+                    break;
+                default:
+                    break;
+            }
         }
-      },
     });
-  }
-);
+});
